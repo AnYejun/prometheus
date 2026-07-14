@@ -30,6 +30,28 @@ from the rim (22 in the corners). Paint is x 17–33, y 0–19.
   The screen effect is *geometric*: standing a screener next to a defender slows him.
 - `ball.start` — who has it. `passes` — `[{ t, to }]`. `shot` — `{ t, by }`.
 - `defense` — `drop` (screener's man sags to the paint), `tight` (everyone pressures).
+- `defenseSkill` — 0–1, how good the defense is (recovery, contest, steal). Default 0.7.
+- `players[].rt` — **player ratings** (0–1), all optional (sensible defaults):
+  `three` `mid` `fin` (shooting by zone), `hnd` (handle → fewer TOs), `pas` (passing),
+  `scr` (screen quality), `spd` (speed). An elite shooter (`three: 0.85`) converts the
+  same open look far more often — so *who* takes the shot matters.
+
+## Player ratings + Monte Carlo (tactical emergence)
+The deterministic `score()` is one idealized run. The real evaluation samples:
+
+- `window.PHALANX.monteCarlo(K)` → runs the possession **K times** with stochastic
+  make/miss (from the shooter's rating × openness × distance), steals on passes, and
+  defender-reaction noise. Returns `{ ev, pScore, avgOpen, samples }` — an *expected
+  points* and a **scoring probability**, robust to luck (a play can't win on one lucky
+  run). The board shows this in green.
+- `window.PHALANX.optimize(iters, K)` → **Monte Carlo search**: perturbs the shot
+  timing + spot, MC-evaluates each candidate, keeps what raises the scoring
+  probability. The LLM proposes the *structure*; MC refines the *execution* → the best
+  tactic **emerges**. Returns the tuned play + its EV. (Verified: 1.47 → 1.54 EV,
+  openness 6.1 → 7.6ft at K=800.)
+
+This is the loop's deepest form: author a play → **Monte-Carlo it to a probability**
+→ let the search raise that probability → commit the emergent tactic.
 
 ## Natural language → play
 - "screen creates an open pull-up" → route the ball-handler off a screener, then to

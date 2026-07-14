@@ -12,10 +12,14 @@ const cv = document.getElementById('court'), ctx = cv.getContext('2d');
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const lerp = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gaussR(r) { let u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+// player ratings 0..1 (skill). off: shooting/finishing/handle/passing/screen. def: recovery/steal.
+const DEFAULT_RT = { spd: .7, three: .5, mid: .5, fin: .6, hnd: .7, pas: .6, scr: .5 };
 
 // ---------- play state ----------
 let PLAY = null, off = [], screens = [], passes = [], shot = null, DEF = 'drop', DUR = 3.4;
-let FRAMES = [], SCORE = null;
+let FRAMES = [], SCORE = null, MC = null;
 
 function routePos(route, t) {
   if (t <= route[0][0]) return route[0][1];
@@ -26,6 +30,7 @@ function routePos(route, t) {
   return route[route.length - 1][1];
 }
 const isScreener = id => screens.some(s => s.by === id);
+const oAt = (id, t) => routePos(off.find(o => o.id === id).route, t);   // module-level, for Monte Carlo
 
 // ball carrier timeline (start -> passes), shot leaves at shot.t
 function carrierAt(t) {
@@ -114,6 +119,56 @@ function evaluate(offAt) {
   return { ev, shotType: d2b <= 4 ? 'rim' : three ? '3pt' : d2b <= 14 ? 'paint' : 'mid', openness: +openness.toFixed(1), turnoverRisk: +toProb.toFixed(2), violations: V, verdict };
 }
 
+// ---------- Monte Carlo: rate players, sample decisions, estimate scoring probability ----------
+function makeP(rt, openness, d2b, corner) {
+  const three = corner ? d2b >= CORNER - 0.3 : d2b >= ARC - 0.3;
+  const type = d2b <= 4 ? 'rim' : three ? 'three' : d2b <= 14 ? 'paint' : 'mid';
+  const base = { rim: .62, paint: .45, mid: .40, three: .355 }[type];
+  const skill = type === 'three' ? rt.three : (type === 'rim' || type === 'paint') ? rt.fin : rt.mid;
+  const open = openness >= 6 ? .07 : openness >= 4 ? .03 : openness >= 2.5 ? -.02 : -.13;
+  return { p: clamp(base + (skill - .5) * .22 + open, .02, .95), val: type === 'three' ? 3 : 2 };
+}
+const stealP = (md, pas, dSkill) => md > 4 ? .02 : clamp((1 - md / 4) * (.35 + (dSkill - .5) * .5) - (pas - .5) * .2, .01, .8);
+
+// run the possession K times with stochastic make/miss, steals, and defender reaction noise.
+function monteCarlo(K = 300) {
+  if (!shot) return null;
+  simulate();                                        // nominal trajectory + openness
+  const nomOpen = SCORE.openness, sp = oAt(shot.by, shot.t), d2b = dist(sp, B);
+  const corner = (sp[0] <= 3.2 || sp[0] >= 46.8) && sp[1] <= 14.2;
+  const rt = off.find(o => o.id === shot.by).rt, dSkill = PLAY.defenseSkill ?? 0.7;
+  const sd = 1.0 + (1 - dSkill) * 1.4;               // worse D = more openness variance
+  const passMd = passes.map(p => { const prev = passes.filter(q => q.t < p.t).slice(-1)[0] || { to: PLAY.ball.start }; const a = oAt(prev.to, p.t), b = oAt(p.to, p.t), fr = FRAMES[Math.min(FRAMES.length - 1, Math.round(p.t / 0.05))]; let md = 99; for (const d of fr.def) { const t = clamp(((d.pos[0] - a[0]) * (b[0] - a[0]) + (d.pos[1] - a[1]) * (b[1] - a[1])) / (dist(a, b) ** 2 || 1), 0, 1); md = Math.min(md, dist(d.pos, lerp(a, b, t))); } return md; });
+  const rng = mulberry32(4321);
+  let pts = 0, sc = 0, opp = 0;
+  for (let k = 0; k < K; k++) {
+    let turned = false;
+    for (const md of passMd) if (rng() < stealP(md, rt.pas, dSkill)) { turned = true; break; }
+    if (turned) continue;
+    const oR = Math.max(0, nomOpen + gaussR(rng) * sd); opp += oR;
+    const { p, val } = makeP(rt, oR, d2b, corner);
+    if (rng() < p) { pts += val; sc++; }
+  }
+  return { ev: +(pts / K).toFixed(3), pScore: +(sc / K).toFixed(3), avgOpen: +(opp / K).toFixed(1), samples: K };
+}
+
+// Monte Carlo tactic search: perturb the shot timing + spot, keep what raises MC-EV. Tactic emerges.
+function optimize(iters = 40, K = 90) {
+  if (!shot) return null;
+  const clone = o => JSON.parse(JSON.stringify(o));
+  let best = clone(PLAY); load(best); let bestEV = monteCarlo(K).ev, rng = mulberry32(777), tried = 0, kept = 0;
+  for (let i = 0; i < iters; i++) {
+    const c = clone(best), sr = c.players.find(p => p.id === c.ball.shot.by).route, last = sr[sr.length - 1];
+    c.ball.shot.t = clamp(c.ball.shot.t + (rng() - 0.5) * 0.3, 0.6, (c.duration || 3) - 0.05);
+    last[0] = clamp(last[0], 0.6, c.duration || 3);
+    last[1] = [clamp(last[1][0] + (rng() - 0.5) * 3.2, 3, 47), clamp(last[1][1] + (rng() - 0.5) * 3.2, 3, 46)];
+    load(c); tried++;
+    const s = SCORE.violations.length ? { ev: -1 } : monteCarlo(K);
+    if (s.ev > bestEV) { best = c; bestEV = s.ev; kept++; }
+  }
+  load(best); return { ev: +bestEV.toFixed(3), tried, kept, play: best };
+}
+
 // ---------- render: top-down tactics board ----------
 let TX, TY, S;
 function fit() {
@@ -160,6 +215,7 @@ function draw(t) {
   ctx.fillStyle = '#ffcf6a'; ctx.font = '700 20px Georgia, serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.fillText(PLAY.title || 'play', 20, 34);
   if (SCORE) { ctx.fillStyle = '#cdb98a'; ctx.font = '13px ui-monospace, monospace'; ctx.fillText(`EV ${SCORE.ev} pts  ·  ${SCORE.shotType}  ·  open ${SCORE.openness}ft  ·  ${SCORE.verdict}`, 20, 54); }
+  if (MC) { ctx.fillStyle = '#7CDBA2'; ctx.font = '12px ui-monospace, monospace'; ctx.fillText(`Monte Carlo (${MC.samples} sims): scores ${Math.round(MC.pScore * 100)}%  ·  EV ${MC.ev} pts`, 20, 72); }
 }
 
 // ---------- Prometheus contract ----------
@@ -167,13 +223,13 @@ function load(play) {
   PLAY = play; off = play.players.filter(p => p.o !== false); screens = play.screens || [];
   passes = (play.ball && play.ball.passes) || []; shot = play.ball && play.ball.shot; DEF = play.defense || 'drop';
   DUR = play.duration || (shot ? shot.t + 0.3 : 3.4);
-  off.forEach(o => o._paintMax = 0);
+  off.forEach(o => { o._paintMax = 0; o.rt = Object.assign({}, DEFAULT_RT, o.rt || {}); });
   return simulate();
 }
-window.PHALANX = { load, simulate, draw, frameAt: t => draw(t), get dur() { return DUR; }, get shotT() { return shot ? shot.t : DUR; } };
+window.PHALANX = { load, simulate, draw, monteCarlo, optimize, frameAt: t => draw(t), get dur() { return DUR; }, get shotT() { return shot ? shot.t : DUR; } };
 window.PROM = {
   medium: 'basketball-tactics',
-  apply(play) { const s = load(play); draw(0); return s; },
+  apply(play) { const s = load(play); MC = monteCarlo(320); draw(0); return Object.assign({}, s, { mc: MC }); },
   score: () => SCORE,
   settle() { draw(shot ? shot.t : DUR); return SCORE; },
   seek(t) { draw(t); },
@@ -193,7 +249,7 @@ document.getElementById('play').addEventListener('click', () => window.PROM.play
   let play = null;
   try { const r = await fetch(qs.get('play') || '../plays/current.json', { cache: 'no-store' }); if (r.ok) play = await r.json(); } catch (_) {}
   if (!play) play = { title: 'empty', players: [{ id: '1', route: [[0, [25, 28]]] }], ball: { start: '1' } };
-  load(play); draw(0);
+  load(play); if (play.ball && play.ball.shot) MC = monteCarlo(320); draw(0);
   if (qs.get('settle') === '1') window.PROM.settle();
 })();
 addEventListener('resize', () => draw(shot ? shot.t : 0));

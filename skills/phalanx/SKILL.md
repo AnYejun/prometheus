@@ -17,9 +17,16 @@ play is hard, but simulating whether it gets an open shot is cheap and determini
 `http://localhost:8778/skills/phalanx/engine/index.html`. Click **▶ run** to watch
 the possession. Drive it with `javascript_tool`.
 
-`window.PROM`: `apply(play)` → simulate + return score · `settle()` → jump to the
-shot + score · `seek(t)` → draw the board at time t (seconds) · `score()` →
-`{ ev, shotType, openness, turnoverRisk, violations, verdict }`.
+`window.PROM`: `apply(play)` → simulate + return score (incl. a `mc` Monte-Carlo
+field) · `settle()` → jump to the shot · `seek(t)` → draw the board at time t ·
+`score()` → `{ ev, shotType, openness, turnoverRisk, violations, verdict }`.
+
+**Monte Carlo (rated players + emergence):** `window.PHALANX.monteCarlo(K)` →
+`{ ev, pScore, avgOpen }` over K stochastic runs (make/miss from ratings × openness,
+steals, defender noise). `window.PHALANX.optimize(iters, K)` → searches the shot
+timing/spot to raise the scoring probability and returns the tuned play. Give players
+`rt` ratings (an elite shooter converts the same look far more often), then optimize
+the execution — the tactic emerges.
 
 ## The loop (identical to every Prometheus capability)
 1. **Author.** Turn the situation into a play (`dsl/GRAMMAR.md`). Court is in feet,
