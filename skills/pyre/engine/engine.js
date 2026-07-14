@@ -117,7 +117,7 @@ function extractTargets(canvas, N, depth = 2.6, jitter = 0.25) {
 
 // ---------- renderer ----------
 const stage = document.getElementById('stage');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 stage.appendChild(renderer.domElement);
@@ -173,31 +173,32 @@ let SHOW = null;
 function sceneOf(type) { return (SHOW.scenes || []).find(s => s.type === type); }
 function assembleEnd() { const a = sceneOf('assemble'); return a ? (a.at || 0) + (a.dur || 3.5) : 3.5; }
 
+function stepTo(t) {                 // compute point positions at time t
+  if (!(cloud && SHOW)) return;
+  const pos = cloud.geometry.attributes.position.array;
+  const asm = sceneOf('assemble') || { at: 0, dur: 3.5, ease: 'outExpo', stagger: 0.5 };
+  const ease = EASE[asm.ease] || EASE.outExpo;
+  const spread = (asm.stagger ?? 0.5) * asm.dur, win = Math.max(0.001, asm.dur - spread);
+  const br = sceneOf('breathe');
+  const brNow = br ? Math.sin((t - (br.at || 0)) * (br.freq ?? 0.25) * Math.PI * 2) : 0;
+  const brAmp = br ? (br.amp ?? 0.15) : 0;
+  for (let i = 0; i < N; i++) {
+    const T = targets[i], S = starts[i];
+    const local = Math.min(1, Math.max(0, (t - asm.at - delays[i] * spread) / win));
+    const e = ease(local);
+    let x = S.x + (T.x - S.x) * e, y = S.y + (T.y - S.y) * e, z = S.z + (T.z - S.z) * e;
+    if (brAmp && e > 0.98) { const k = 1 + brNow * brAmp * (0.4 + T.lum); x *= k; y *= k; z *= k; }
+    pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+  }
+  cloud.geometry.attributes.position.needsUpdate = true;
+  const sw = sceneOf('swirl');
+  if (sw && t > (sw.at || 0)) controls.autoRotateSpeed = (sw.speed ?? 0.5) * 3;
+}
+
 function tick() {
   requestAnimationFrame(tick);
   const now = clock.getElapsedTime();
-  const t = forced != null ? forced : now - showStart;
-
-  if (cloud && SHOW) {
-    const pos = cloud.geometry.attributes.position.array;
-    const asm = sceneOf('assemble') || { at: 0, dur: 3.5, ease: 'outExpo', stagger: 0.5 };
-    const ease = EASE[asm.ease] || EASE.outExpo;
-    const spread = (asm.stagger ?? 0.5) * asm.dur, win = Math.max(0.001, asm.dur - spread);
-    const br = sceneOf('breathe');
-    const brNow = br ? Math.sin((t - (br.at || 0)) * (br.freq ?? 0.25) * Math.PI * 2) : 0;
-    const brAmp = br ? (br.amp ?? 0.15) : 0;
-    for (let i = 0; i < N; i++) {
-      const T = targets[i], S = starts[i];
-      const local = Math.min(1, Math.max(0, (t - asm.at - delays[i] * spread) / win));
-      const e = ease(local);
-      let x = S.x + (T.x - S.x) * e, y = S.y + (T.y - S.y) * e, z = S.z + (T.z - S.z) * e;
-      if (brAmp && e > 0.98) { const k = 1 + brNow * brAmp * (0.4 + T.lum); x *= k; y *= k; z *= k; }
-      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
-    }
-    cloud.geometry.attributes.position.needsUpdate = true;
-    const sw = sceneOf('swirl');
-    if (sw && t > (sw.at || 0)) controls.autoRotateSpeed = (sw.speed ?? 0.5) * 3;
-  }
+  stepTo(forced != null ? forced : now - showStart);
   controls.update();
   renderer.render(scene, camera);
 }
@@ -242,6 +243,15 @@ window.PYRE = {
   settle() { forced = assembleEnd() + 0.15; controls.autoRotate = false; return metrics(); },
   play() { if (forced != null) { showStart = clock.getElapsedTime() - forced; forced = null; controls.autoRotate = true; } },
   replay() { build(); },
+  // capture support: freeze at t, render one frontal frame synchronously
+  frame(t) {
+    forced = t; controls.autoRotate = false;
+    camera.position.set(0, 0, 17); camera.lookAt(0, 0, 0);
+    controls.target.set(0, 0, 0);
+    stepTo(t);                        // recompute positions for t, THEN render
+    renderer.render(scene, camera);
+    return true;
+  },
 };
 
 // ---------- Prometheus Contract: every capability exposes window.PROM ----------
@@ -257,8 +267,8 @@ window.PROM = {
 
 async function boot() {
   const qs = new URLSearchParams(location.search);
-  SHOW = (qs.get('show') && await tryJson(qs.get('show'))) || await tryJson('./shows/current.json') || DEFAULT_SHOW;
-  const img = await loadImg(qs.get('src') || './shows/source.png');
+  SHOW = (qs.get('show') && await tryJson(qs.get('show'))) || await tryJson('../shows/current.json') || DEFAULT_SHOW;
+  const img = await loadImg(qs.get('src') || '../shows/source.png');
   sourceCanvas = img ? imgToCanvas(img) : drawWordmark('PYRE');
   clock.start(); build(); tick();
   if (qs.has('t')) window.PYRE.seek(parseFloat(qs.get('t')));

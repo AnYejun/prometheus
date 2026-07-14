@@ -18,9 +18,9 @@ coordinates yourself** — that's the engine's job and it does it in millisecond
 
 ## Run it
 
-1. Serve the skill directory statically (any static server; port is yours):
-   `python3 -m http.server 8777 --directory <this-skill>/engine`
-2. Open `http://localhost:8777/index.html` in the preview browser.
+1. Serve the repo (or this skill's) root — the engine loads seeds from `../shows/`:
+   `python3 -m http.server 8778 --directory <repo-root>`
+2. Open `http://localhost:8778/skills/pyre/engine/index.html` in the preview browser.
 3. With no photo and no show, it renders the **PYRE** wordmark assembling — that
    proves the engine is alive. Drag any image onto the canvas to become it.
 

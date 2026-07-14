@@ -91,8 +91,24 @@ function settle() {  // finish transitions -> final state, for a deterministic s
   return score();
 }
 
+// ---------- capture support ----------
+// draw bars at reveal progress p (0..1) and rasterize the SVG to a PNG data URL
+function frameProgress(p) {
+  svg.selectAll('rect.bar').interrupt()
+    .attr('height', function () { return +this.dataset.finalH * p; })
+    .attr('y', function () { return state_ih - +this.dataset.finalH * p; });
+  svg.selectAll('text.val').interrupt().attr('opacity', Math.max(0, p * 1.4 - 0.4));
+}
+function rasterize() {
+  const node = svg.node().cloneNode(true);
+  node.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  node.setAttribute('width', W); node.setAttribute('height', H);
+  const s = new XMLSerializer().serializeToString(node);
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(s)));
+}
+
 // ---------- Prometheus Contract ----------
-window.PRISM = { render, score, settle, getProgram: () => last };
+window.PRISM = { render, score, settle, frameProgress, rasterize, getProgram: () => last };
 window.PROM = {
   medium: 'data-visualization',
   apply(program) { render(program); return score(); },
@@ -109,7 +125,7 @@ const DEFAULT = {
 (async function boot() {
   const qs = new URLSearchParams(location.search);
   let prog = DEFAULT;
-  try { const u = qs.get('program') || './data/current.json'; const r = await fetch(u, { cache: 'no-store' }); if (r.ok) prog = await r.json(); } catch (_) {}
+  try { const u = qs.get('program') || '../data/current.json'; const r = await fetch(u, { cache: 'no-store' }); if (r.ok) prog = await r.json(); } catch (_) {}
   render(prog);
   if (qs.get('settle') === '1') settle();
 })();

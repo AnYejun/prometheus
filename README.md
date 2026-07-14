@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/hero.png" alt="Prometheus — give an LLM a language, and it wields the world that language describes" width="860">
+</p>
+
 # 🔥 Prometheus
 
 **Give an LLM a language, and it can wield the world that language describes.**
@@ -36,11 +40,15 @@ drone show and a chart.
 ## Capabilities
 
 ### 🔥 [PYRE](skills/pyre) — photo → drone-show point cloud  *(backend: three.js)*
+<p align="center"><img src="assets/pyre.gif" alt="PYRE — embers scatter and assemble into an image" width="600"></p>
+
 Drop a photo; it shatters into thousands of glowing embers that assemble into the
 image, then breathe and swirl. The LLM authors a **choreography DSL**; a critic
 scores legibility. `legibility 0.908 → 0.972` in a live loop run.
 
 ### 🔺 [PRISM](skills/prism) — data → animated chart  *(backend: D3)*
+<p align="center"><img src="assets/prism.gif" alt="PRISM — bars grow into a chart" width="600"></p>
+
 Numbers + a vibe → an animated bar chart. The critic gate is **encoding
 fidelity** (Pearson corr of bar height vs value) — a chart that lies about the
 data *fails the gate*. Proves the contract generalizes past 3D.
