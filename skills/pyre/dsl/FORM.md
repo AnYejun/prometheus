@@ -28,6 +28,7 @@ Open with `?scene=../shows/<file>.json`. A scene:
 | `capsule` | `a [x,y,z]`, `b [x,y,z]`, `r`, `solid?` | limbs, torso — the workhorse |
 | `box` | `at [x,y,z]`, `size [x,y,z]` | feet, slabs, blocky bits |
 | `cone` | `at [x,y,z]` (base), `dir [x,y,z]`, `h`, `r` | ears, spikes, noses |
+| `tube` | `path [[x,y,z]…]`, `r` (number or per-point array), `seg?` | **limbs, spines, tails** — a Catmull-Rom spline swept with a radius profile. One smooth curve through shoulder→elbow→fist: no seam at the joint. |
 
 Common: `color` (hex, used directly — a yellow part glows yellow), `w` (point
 weight; bigger/denser parts get more points). Points sit on the *surface* unless

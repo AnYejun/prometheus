@@ -130,6 +130,19 @@ function perp(ax, ay, az) {           // two unit vectors perpendicular to axis
   const wx = ay * uz - az * uy, wy = az * ux - ax * uz, wz = ax * uy - ay * ux;
   return [ux, uy, uz, wx, wy, wz];
 }
+function densifyTube(part) {   // Catmull-Rom spline through path[] with a radius profile
+  const path = part.path || [], R = Array.isArray(part.r) ? part.r : path.map(() => part.r || 0.5), seg = part.seg || 8, out = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const p0 = path[Math.max(0, i - 1)], p1 = path[i], p2 = path[i + 1], p3 = path[Math.min(path.length - 1, i + 2)];
+    for (let s = 0; s < seg; s++) {
+      const t = s / seg, tt = t * t, ttt = tt * t;
+      const q = j => 0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * tt + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * ttt);
+      out.push({ p: [q(0), q(1), q(2)], r: R[i] + (R[i + 1] - R[i]) * t });
+    }
+  }
+  out.push({ p: path[path.length - 1], r: R[R.length - 1] });
+  part._dense = out; return out;
+}
 function samplePart(part, n) {
   const out = [], col = hexRgb(part.color), lum = 0.35 + 0.65 * Math.max(...col);
   const add = (x, y, z) => out.push({ x, y, z, r: col[0], g: col[1], b: col[2], lum, px: 0, py: 0, gw: 1, gh: 1 });
@@ -156,6 +169,20 @@ function samplePart(part, n) {
     for (let i = 0; i < n; i++) {
       const t = rng(), ang = 2 * Math.PI * rng(), rr = r * (1 - t);
       const cx = base[0] + dx * h * t, cy = base[1] + dy * h * t, cz = base[2] + dz * h * t;
+      add(cx + (ux * Math.cos(ang) + wx * Math.sin(ang)) * rr, cy + (uy * Math.cos(ang) + wy * Math.sin(ang)) * rr, cz + (uz * Math.cos(ang) + wz * Math.sin(ang)) * rr);
+    }
+  } else if (S === 'tube') {
+    const segs = part._dense || densifyTube(part);
+    let L = 0; const cum = [0];
+    for (let i = 0; i < segs.length - 1; i++) { L += Math.hypot(segs[i + 1].p[0] - segs[i].p[0], segs[i + 1].p[1] - segs[i].p[1], segs[i + 1].p[2] - segs[i].p[2]); cum.push(L); }
+    for (let i = 0; i < n; i++) {
+      const u = rng() * L; let si = 0; while (si < cum.length - 2 && cum[si + 1] < u) si++;
+      const t = (u - cum[si]) / ((cum[si + 1] - cum[si]) || 1);
+      const a = segs[si].p, b = segs[si + 1].p, rr0 = segs[si].r + (segs[si + 1].r - segs[si].r) * t;
+      let ax = b[0] - a[0], ay = b[1] - a[1], az = b[2] - a[2]; const dl = Math.hypot(ax, ay, az) || 1; ax /= dl; ay /= dl; az /= dl;
+      const [ux, uy, uz, wx, wy, wz] = perp(ax, ay, az);
+      const ang = 2 * Math.PI * rng(), rr = rr0 * (part.solid ? Math.sqrt(rng()) : 1);
+      const cx = a[0] + (b[0] - a[0]) * t, cy = a[1] + (b[1] - a[1]) * t, cz = a[2] + (b[2] - a[2]) * t;
       add(cx + (ux * Math.cos(ang) + wx * Math.sin(ang)) * rr, cy + (uy * Math.cos(ang) + wy * Math.sin(ang)) * rr, cz + (uz * Math.cos(ang) + wz * Math.sin(ang)) * rr);
     }
   }
@@ -185,6 +212,7 @@ function partSdf(p, part) {
   if (S === 'capsule') return sdCapsule(p, part.a, part.b, part.r || 0.5);
   if (S === 'box') return sdBox(p, part.at, part.size || [1, 1, 1]);
   if (S === 'cone') { const dl = Math.hypot(...(part.dir || [0, 1, 0])) || 1, d = (part.dir || [0, 1, 0]).map(v => v / dl), h = part.h || 1; return sdCapsule(p, part.at, [part.at[0] + d[0] * h, part.at[1] + d[1] * h, part.at[2] + d[2] * h], (part.r || 0.4) * 0.6); }
+  if (S === 'tube') { const segs = part._dense || densifyTube(part); let d = 1e9; for (let i = 0; i < segs.length - 1; i++) d = Math.min(d, sdCapsule(p, segs[i].p, segs[i + 1].p, (segs[i].r + segs[i + 1].r) / 2)); return d; }
   return 1e9;
 }
 function makeField(parts, kGlobal) {
@@ -200,6 +228,7 @@ function makeField(parts, kGlobal) {
 
 function sampleScene(scene) {
   const parts = scene.parts || [], w = parts.map(p => p.w || 1), tot = w.reduce((a, b) => a + b, 0) || 1;
+  parts.forEach(p => { if (p.shape === 'tube') densifyTube(p); });   // precompute splines once
   const N = scene.points || 8000; let all = [];
   parts.forEach((p, i) => { all = all.concat(samplePart(p, Math.max(1, Math.round(N * w[i] / tot)))); });
   if (!all.length) return all;
