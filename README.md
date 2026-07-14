@@ -48,6 +48,13 @@ Drop a photo; it shatters into thousands of glowing embers that assemble into th
 image, then breathe and swirl. The LLM authors a **choreography DSL**; a critic
 scores legibility. `legibility 0.908 → 0.972` in a live loop run.
 
+**FORM mode** — beyond flat photos, the LLM *describes* a subject as 3D primitives
+(spline **tubes**, spheres, a smooth-union `blend` that melts parts into one
+surface); the engine fills that surface with points → a **real rotatable volume**.
+three.js is just the canvas; the authored language carries the 3D.
+[▶ run the form](https://anyejun.github.io/prometheus/skills/pyre/engine/index.html?scene=../shows/figure.json) · [grammar](skills/pyre/dsl/FORM.md)
+<p align="center"><img src="assets/figure.gif" alt="PYRE FORM — points assemble into a described 3D figure, then rotate" width="340"></p>
+
 ### 🔺 [PRISM](skills/prism) — data → animated chart  *(backend: D3)*
 <p align="center"><img src="assets/prism.gif" alt="PRISM — bars grow into a chart" width="600"></p>
 

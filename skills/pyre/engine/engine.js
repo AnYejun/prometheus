@@ -398,6 +398,14 @@ window.PYRE = {
     renderer.render(scene, camera);
     return true;
   },
+  frameCam(t, az, elev) {             // capture at time t from camera azimuth az (for rotate GIFs)
+    forced = t; controls.autoRotate = false;
+    const r = 17, e = elev || 0;
+    camera.position.set(Math.sin(az) * r * Math.cos(e), Math.sin(e) * r, Math.cos(az) * r * Math.cos(e));
+    camera.lookAt(0, 0, 0); controls.target.set(0, 0, 0);
+    stepTo(t); renderer.render(scene, camera);
+    return true;
+  },
 };
 
 // ---------- Prometheus Contract: every capability exposes window.PROM ----------
