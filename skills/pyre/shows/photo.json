@@ -1,0 +1,10 @@
+{
+  "$comment": "Tuned for a real photo/portrait: dense + crisper assemble so faces read, gentle life. Use with ?show=../shows/photo.json then drop a photo (or place source.png).",
+  "points": 9000,
+  "seed": 7,
+  "scenes": [
+    { "type": "assemble", "at": 0.0, "dur": 3.2, "ease": "outExpo", "stagger": 0.42, "from": "sphere" },
+    { "type": "breathe",  "at": 3.2, "amp": 0.09, "freq": 0.2 },
+    { "type": "swirl",    "at": 3.2, "speed": 0.08, "axis": "y" }
+  ]
+}
