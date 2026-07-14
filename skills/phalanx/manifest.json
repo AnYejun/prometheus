@@ -1,0 +1,10 @@
+{
+  "name": "phalanx",
+  "medium": "basketball-tactics",
+  "description": "Text/intent -> a basketball set play (5 routes + screens + passes + a shot). The engine simulates it against a reactive man defense and scores expected points. The defense is the verifier: a play that doesn't beat it fails the gate. Backend: a canvas possession simulator.",
+  "global": "PROM",
+  "executor": "engine/index.html",
+  "grammar": "dsl/GRAMMAR.md",
+  "critic": { "gate": { "ev": 1.05, "violations": [] }, "rubric": "SKILL.md#critic" },
+  "seeds": ["plays/current.json"]
+}

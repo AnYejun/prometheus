@@ -20,7 +20,7 @@
   .lede { max-width:720px; margin:30px auto 8px; text-align:center; line-height:1.6; color:#cdb b9a; }
   .lede { color:#cdbb9a; }
   h2 { font-family:Georgia,serif; letter-spacing:.02em; margin:54px 0 6px; }
-  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:18px; margin-top:20px; }
   @media (max-width:820px){ .grid{ grid-template-columns:1fr; } }
   .card { background:#100c16; border:1px solid #241c2c; border-radius:14px; overflow:hidden;
     display:flex; flex-direction:column; transition:border-color .2s, transform .2s; }
@@ -74,6 +74,11 @@
       <div class="thumb"><img src="assets/lyra.gif" alt="LYRA"></div>
       <div class="body"><h3>🎵 LYRA <span class="pill">Tone.js</span></h3>
         <p>Text → music. Critic gate = in-key ratio: a melody that leaves its key fails. Press ▶ for sound.</p></div>
+    </a>
+    <a class="card" href="skills/phalanx/engine/index.html">
+      <div class="thumb"><img src="assets/phalanx.gif" alt="PHALANX"></div>
+      <div class="body"><h3>🏀 PHALANX <span class="pill">sim</span></h3>
+        <p>Text → a basketball play, simulated vs a reactive defense. Critic gate = expected points: a play that doesn't get an open look fails.</p></div>
     </a>
   </div>
 

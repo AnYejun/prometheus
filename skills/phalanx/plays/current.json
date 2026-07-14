@@ -1,0 +1,16 @@
+{
+  "$comment": "Authored by the critic loop from 'need a 3 vs drop coverage'. It self-corrected across the sim: contested 0.65 -> too-fast violation caught -> legal wide-open 3, EV 1.12 'quality look'. Court feet, basket (25,5.25).",
+  "title": "Horns PnR — pull-up 3 vs drop",
+  "situation": "need a 3, they're in drop coverage",
+  "defense": "drop",
+  "duration": 2.0,
+  "players": [
+    { "id": "1", "route": [[0, [25, 31]], [0.7, [25.8, 28.4]], [1.45, [34, 30.6]]] },
+    { "id": "5", "route": [[0, [25, 24]], [0.7, [26.9, 27.9]], [1.3, [27.1, 27.6]], [2.0, [23, 16]]] },
+    { "id": "2", "route": [[0, [4, 9]], [2.0, [4, 9]]] },
+    { "id": "3", "route": [[0, [46, 22]], [2.0, [46, 22]]] },
+    { "id": "4", "route": [[0, [7, 29]], [2.0, [7, 30]]] }
+  ],
+  "screens": [ { "by": "5", "on": "1", "t": 0.9 } ],
+  "ball": { "start": "1", "passes": [], "shot": { "t": 1.45, "by": "1" } }
+}

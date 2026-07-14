@@ -70,6 +70,18 @@ A musical intent → a short playable piece with a piano roll. The critic gate i
 Takes the contract to a **non-visual** medium (audio). Live loop caught an off-key
 note (`inKey 0.8 → 1.0`).
 
+### 🏀 [PHALANX](skills/phalanx) — text → a basketball play  *(backend: a possession simulator)*
+<p align="center"><img src="assets/phalanx.gif" alt="PHALANX — a set play runs against a reactive defense" width="440"></p>
+
+Describe a situation ("need a 3 vs drop coverage"); the LLM authors a set play —
+five routes, a screen, a shot — and a **possession simulator runs it against a
+reactive man defense**. The critic gate is **expected points**: a play that doesn't
+get an open look (or that throws a pass through a defender) *fails*. **The defense is
+the verifier.** This is the razor — *hard to generate* (5 bodies in space-time, which
+natural language can't hold), *cheap to verify* (simulate the possession). Live loop:
+a contested `EV 0.65` pull-up → (an illegal too-fast route, caught) → a legal
+**wide-open 3, `EV 1.12`**.
+
 ## Add a new language — one command
 ```
 bin/prometheus-new lyra music      # stamps skills/lyra/ from template/
