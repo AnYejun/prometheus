@@ -1,0 +1,10 @@
+{
+  "name": "prism",
+  "medium": "data-visualization",
+  "description": "Data -> animated chart. The LLM authors a chart DSL; the backend is D3. A Prometheus capability proving the contract generalizes past point clouds.",
+  "global": "PROM",
+  "executor": "engine/index.html",
+  "grammar": "dsl/GRAMMAR.md",
+  "critic": { "gate": { "fidelity": 0.98, "clipped": false }, "rubric": "SKILL.md#critic" },
+  "seeds": ["data/current.json"]
+}

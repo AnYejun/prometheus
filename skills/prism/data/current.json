@@ -1,0 +1,12 @@
+{
+  "$comment": "Authored by the universal critic loop from '도시 최고기온 비교, 더운 순서, 하나씩 튀어오르게'. fidelity 1.0 (faithful).",
+  "title": "도시 최고기온 (°C) — 더운 순서",
+  "data": [
+    { "label": "Daegu", "value": 36 },
+    { "label": "Seoul", "value": 33 },
+    { "label": "Busan", "value": 29 },
+    { "label": "Incheon", "value": 31 },
+    { "label": "Jeju", "value": 34 }
+  ],
+  "chart": { "type": "bar", "sort": "desc", "animate": { "dur": 800, "stagger": 110, "ease": "backOut" } }
+}

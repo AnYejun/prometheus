@@ -244,6 +244,17 @@ window.PYRE = {
   replay() { build(); },
 };
 
+// ---------- Prometheus Contract: every capability exposes window.PROM ----------
+// Same shape across all mediums, so ONE critic loop drives point clouds, charts, music...
+window.PROM = {
+  medium: 'point-cloud',
+  apply: (program) => window.PYRE.applyShow(program), // render a program, return score
+  score: () => window.PYRE.metrics(),                 // objective critic signals
+  settle: () => window.PYRE.settle(),                 // freeze at natural end, return score
+  seek: (t) => window.PYRE.seek(t),                   // freeze timeline at t sec
+  play: () => window.PYRE.play(),
+};
+
 async function boot() {
   const qs = new URLSearchParams(location.search);
   SHOW = (qs.get('show') && await tryJson(qs.get('show'))) || await tryJson('./shows/current.json') || DEFAULT_SHOW;

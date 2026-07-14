@@ -1,0 +1,10 @@
+{
+  "name": "__NAME__",
+  "medium": "__MEDIUM__",
+  "description": "TODO: one line — what world does this let the LLM describe?",
+  "global": "PROM",
+  "executor": "engine/index.html",
+  "grammar": "dsl/GRAMMAR.md",
+  "critic": { "gate": { "fidelity": 0.9 }, "rubric": "SKILL.md#critic" },
+  "seeds": ["seeds/current.json"]
+}

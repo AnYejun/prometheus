@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# prometheus-new <name> <medium>
+# Stamp a new capability into skills/<name>/ from template/, ready to fill in.
+set -e
+
+NAME="$1"; MEDIUM="${2:-custom}"
+if [ -z "$NAME" ]; then
+  echo "usage: bin/prometheus-new <name> <medium>"
+  echo "example: bin/prometheus-new lyra music"
+  exit 1
+fi
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DEST="$ROOT/skills/$NAME"
+if [ -e "$DEST" ]; then echo "error: $DEST already exists"; exit 1; fi
+
+cp -R "$ROOT/template" "$DEST"
+
+# substitute placeholders (BSD/macOS and GNU sed both handled)
+find "$DEST" -type f | while IFS= read -r f; do
+  if sed --version >/dev/null 2>&1; then
+    sed -i -e "s/__NAME__/$NAME/g" -e "s/__MEDIUM__/$MEDIUM/g" "$f"
+  else
+    sed -i '' -e "s/__NAME__/$NAME/g" -e "s/__MEDIUM__/$MEDIUM/g" "$f"
+  fi
+done
+
+echo "created skills/$NAME  (medium: $MEDIUM)"
+echo "next: fill the 4 slots — dsl/GRAMMAR.md, engine/executor.js (render + score), SKILL.md, seeds/current.json"
+echo "then: python3 -m http.server 8779 --directory \"$ROOT\"  ->  http://localhost:8779/skills/$NAME/engine/index.html"

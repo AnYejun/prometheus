@@ -1,0 +1,18 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PRISM — data → chart (Prometheus / D3)</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #07080d; overflow: hidden; }
+  #chart { display: block; }
+  #hud {
+    position: fixed; left: 18px; bottom: 14px; z-index: 10;
+    font: 500 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    color: #d8b48c; letter-spacing: .04em; opacity: .8; pointer-events: none;
+  }
+  #hud b { color: #ffcf9e; font-weight: 700; }
+</style>
+<svg id="chart"></svg>
+<div id="hud"><b>PRISM</b> · data → chart · a Prometheus capability, backend = D3</div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="./prism.js"></script>

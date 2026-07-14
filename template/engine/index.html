@@ -1,0 +1,14 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__NAME__ — a Prometheus capability</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #07080d; overflow: hidden; color: #d8b48c; }
+  #hud { position: fixed; left: 18px; bottom: 14px; font: 500 12px ui-monospace, monospace; opacity: .8; }
+</style>
+<div id="stage"></div>
+<div id="hud"><b>__NAME__</b> · __MEDIUM__ · Prometheus capability</div>
+<!-- TODO(executor): load your backend library here, e.g.
+     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>  (charts)
+     or an importmap for three.js  (3D). Then implement executor.js. -->
+<script src="./executor.js"></script>

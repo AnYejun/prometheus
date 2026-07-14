@@ -1,0 +1,10 @@
+{
+  "name": "pyre",
+  "medium": "point-cloud",
+  "description": "Photo -> drone-show point cloud that scatters and assembles into the image, choreographed by a motion DSL.",
+  "global": "PROM",
+  "executor": "engine/index.html",
+  "grammar": "dsl/SPEC.md",
+  "critic": { "gate": { "legibility": 0.85 }, "rubric": "SKILL.md#critic-rubric" },
+  "seeds": ["shows/current.json"]
+}
