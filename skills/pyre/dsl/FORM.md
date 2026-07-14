@@ -34,6 +34,23 @@ weight; bigger/denser parts get more points). Points sit on the *surface* unless
 `solid: true`. The whole scene is auto-centered and scaled to a standard height.
 `scenes` is the same choreography as photo mode (assemble/breathe/swirl).
 
+## Smooth connection — melt parts into ONE surface
+By default parts are separate blobs with seams at the joints. Add a scene-level
+**`blend`** and the parts fuse into a single continuous skin — arms flow into the
+torso, the neck into the head — via a **smooth-union signed-distance field**
+(metaball-style `smin`). Every seed point is then projected onto that merged
+isosurface, so the webbing at each joint fills in.
+
+| field | where | meaning |
+|-------|-------|---------|
+| `blend` | scene | global weld radius. `0` = hard separate parts; `0.4–0.7` = organic melt; higher = puddle |
+| `blend` | part | per-part override — a value on one part controls how strongly *it* melts in |
+| `smoothIters` | scene | projection steps onto the surface (default 4; more = tighter) |
+
+`blend` **is the language for how parts connect** — the thing you asked for. Give a
+limb a small `blend` to keep it crisp, or a large one to have it sink into the body.
+Points that would diverge are kept at their seed (the surface stays clean).
+
 ## How the LLM authors one
 Look at the subject. Block it out as a stick-figure of primitives: a sphere for the
 head, capsules for each limb segment (author the *pose* — a flexed arm is two

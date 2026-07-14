@@ -2,6 +2,8 @@
   "$comment": "FORM mode: an LLM looked at the flexing-Pikachu photo and DESCRIBED it as 3D primitives. The engine fills these surfaces with points -> a real rotatable volume. This is the point: the LLM authors 3D structure, three.js is just the canvas.",
   "points": 12000,
   "seed": 7,
+  "blend": 0.55,
+  "smoothIters": 5,
   "parts": [
     { "shape": "sphere",  "at": [0, 3.6, 0],  "r": 1.15, "color": "#ffd23a", "w": 3 },
     { "shape": "cone", "at": [-0.55, 4.3, 0], "dir": [-0.4, 1, 0.05], "h": 1.5, "r": 0.32, "color": "#ffd23a", "w": 1 },

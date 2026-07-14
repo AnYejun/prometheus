@@ -161,11 +161,69 @@ function samplePart(part, n) {
   }
   return out;
 }
+// ---- SDF field: merge parts into ONE smooth continuous surface (smooth union) ----
+function smin(a, b, k) {           // polynomial smooth-min: the blend at joints
+  if (k <= 1e-4) return Math.min(a, b);
+  const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (b - a) / k));
+  return b * (1 - h) + a * h - k * h * (1 - h);
+}
+function sdSphere(p, c, r) { return Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]) - r; }
+function sdCapsule(p, a, b, r) {
+  const pax = p[0] - a[0], pay = p[1] - a[1], paz = p[2] - a[2];
+  const bax = b[0] - a[0], bay = b[1] - a[1], baz = b[2] - a[2];
+  let h = (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz || 1);
+  h = Math.max(0, Math.min(1, h));
+  return Math.hypot(pax - bax * h, pay - bay * h, paz - baz * h) - r;
+}
+function sdBox(p, c, s) {
+  const qx = Math.abs(p[0] - c[0]) - s[0] / 2, qy = Math.abs(p[1] - c[1]) - s[1] / 2, qz = Math.abs(p[2] - c[2]) - s[2] / 2;
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0);
+}
+function partSdf(p, part) {
+  const S = part.shape;
+  if (S === 'sphere') return sdSphere(p, part.at, part.r || 1);
+  if (S === 'capsule') return sdCapsule(p, part.a, part.b, part.r || 0.5);
+  if (S === 'box') return sdBox(p, part.at, part.size || [1, 1, 1]);
+  if (S === 'cone') { const dl = Math.hypot(...(part.dir || [0, 1, 0])) || 1, d = (part.dir || [0, 1, 0]).map(v => v / dl), h = part.h || 1; return sdCapsule(p, part.at, [part.at[0] + d[0] * h, part.at[1] + d[1] * h, part.at[2] + d[2] * h], (part.r || 0.4) * 0.6); }
+  return 1e9;
+}
+function makeField(parts, kGlobal) {
+  return p => {
+    let d = 1e9;
+    for (let i = 0; i < parts.length; i++) {
+      const di = partSdf(p, parts[i]);
+      d = i === 0 ? di : smin(d, di, parts[i].blend != null ? parts[i].blend : kGlobal);
+    }
+    return d;
+  };
+}
+
 function sampleScene(scene) {
   const parts = scene.parts || [], w = parts.map(p => p.w || 1), tot = w.reduce((a, b) => a + b, 0) || 1;
   const N = scene.points || 8000; let all = [];
   parts.forEach((p, i) => { all = all.concat(samplePart(p, Math.max(1, Math.round(N * w[i] / tot)))); });
   if (!all.length) return all;
+
+  // smooth: project every seed point onto the merged isosurface (Newton on the SDF).
+  // this welds primitives into one continuous surface — arms flow into torso, etc.
+  const k = scene.blend || 0;
+  if (k > 0) {
+    const field = makeField(parts, k), e = 0.03, iters = scene.smoothIters || 4;
+    for (const pt of all) {
+      let x = pt.x, y = pt.y, z = pt.z;
+      for (let it = 0; it < iters; it++) {
+        const d = field([x, y, z]);
+        const gx = field([x + e, y, z]) - field([x - e, y, z]);
+        const gy = field([x, y + e, z]) - field([x, y - e, z]);
+        const gz = field([x, y, z + e]) - field([x, y, z - e]);
+        const gl = Math.hypot(gx, gy, gz); if (gl < 1e-5) break;
+        x -= d * gx / gl; y -= d * gy / gl; z -= d * gz / gl;
+      }
+      if (isFinite(x) && isFinite(y) && isFinite(z)) { pt.x = x; pt.y = y; pt.z = z; }  // keep seed on divergence
+    }
+    all = all.filter(p => isFinite(p.x) && isFinite(p.y) && isFinite(p.z));
+  }
+
   const xs = all.map(p => p.x), ys = all.map(p => p.y), zs = all.map(p => p.z);
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2;
   const s = 11 / Math.max(Math.max(...ys) - Math.min(...ys), 1e-3);
