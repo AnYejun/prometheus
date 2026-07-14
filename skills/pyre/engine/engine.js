@@ -115,6 +115,64 @@ function extractTargets(canvas, N, depth = 2.6, jitter = 0.25) {
   return out;
 }
 
+// ---------- FORM mode: sample points on described 3D primitives ----------
+// The LLM authors a scene of parts (sphere/capsule/box/cone). We fill their
+// surfaces with points -> a real volumetric target, not a flattened photo.
+function hexRgb(h) {
+  h = (h || '#ffcf6a').replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+}
+function unit() { const u = rng(), v = rng(), th = 2 * Math.PI * u, ph = Math.acos(2 * v - 1); return [Math.sin(ph) * Math.cos(th), Math.sin(ph) * Math.sin(th), Math.cos(ph)]; }
+function perp(ax, ay, az) {           // two unit vectors perpendicular to axis
+  let ux = ay, uy = -ax, uz = 0, ul = Math.hypot(ux, uy, uz);
+  if (ul < 1e-4) { ux = 0; uy = az; uz = -ay; ul = Math.hypot(ux, uy, uz); }
+  ux /= ul; uy /= ul; uz /= ul;
+  const wx = ay * uz - az * uy, wy = az * ux - ax * uz, wz = ax * uy - ay * ux;
+  return [ux, uy, uz, wx, wy, wz];
+}
+function samplePart(part, n) {
+  const out = [], col = hexRgb(part.color), lum = 0.35 + 0.65 * Math.max(...col);
+  const add = (x, y, z) => out.push({ x, y, z, r: col[0], g: col[1], b: col[2], lum, px: 0, py: 0, gw: 1, gh: 1 });
+  const S = part.shape;
+  if (S === 'sphere') {
+    const c = part.at, r = part.r || 1;
+    for (let i = 0; i < n; i++) { const d = unit(), rr = r * (part.solid ? Math.cbrt(rng()) : 1); add(c[0] + d[0] * rr, c[1] + d[1] * rr, c[2] + d[2] * rr); }
+  } else if (S === 'capsule') {
+    const a = part.a, b = part.b, r = part.r || 0.5;
+    let ax = b[0] - a[0], ay = b[1] - a[1], az = b[2] - a[2]; const L = Math.hypot(ax, ay, az) || 1; ax /= L; ay /= L; az /= L;
+    const [ux, uy, uz, wx, wy, wz] = perp(ax, ay, az);
+    for (let i = 0; i < n; i++) {
+      const t = rng(), ang = 2 * Math.PI * rng(), rr = r * (part.solid ? Math.sqrt(rng()) : 1);
+      const cx = a[0] + (b[0] - a[0]) * t, cy = a[1] + (b[1] - a[1]) * t, cz = a[2] + (b[2] - a[2]) * t;
+      add(cx + (ux * Math.cos(ang) + wx * Math.sin(ang)) * rr, cy + (uy * Math.cos(ang) + wy * Math.sin(ang)) * rr, cz + (uz * Math.cos(ang) + wz * Math.sin(ang)) * rr);
+    }
+  } else if (S === 'box') {
+    const c = part.at, s = part.size || [1, 1, 1];
+    for (let i = 0; i < n; i++) add(c[0] + (rng() - 0.5) * s[0], c[1] + (rng() - 0.5) * s[1], c[2] + (rng() - 0.5) * s[2]);
+  } else if (S === 'cone') {
+    const base = part.at, h = part.h || 1, r = part.r || 0.4, dir = part.dir || [0, 1, 0];
+    const dl = Math.hypot(...dir) || 1, dx = dir[0] / dl, dy = dir[1] / dl, dz = dir[2] / dl;
+    const [ux, uy, uz, wx, wy, wz] = perp(dx, dy, dz);
+    for (let i = 0; i < n; i++) {
+      const t = rng(), ang = 2 * Math.PI * rng(), rr = r * (1 - t);
+      const cx = base[0] + dx * h * t, cy = base[1] + dy * h * t, cz = base[2] + dz * h * t;
+      add(cx + (ux * Math.cos(ang) + wx * Math.sin(ang)) * rr, cy + (uy * Math.cos(ang) + wy * Math.sin(ang)) * rr, cz + (uz * Math.cos(ang) + wz * Math.sin(ang)) * rr);
+    }
+  }
+  return out;
+}
+function sampleScene(scene) {
+  const parts = scene.parts || [], w = parts.map(p => p.w || 1), tot = w.reduce((a, b) => a + b, 0) || 1;
+  const N = scene.points || 8000; let all = [];
+  parts.forEach((p, i) => { all = all.concat(samplePart(p, Math.max(1, Math.round(N * w[i] / tot)))); });
+  if (!all.length) return all;
+  const xs = all.map(p => p.x), ys = all.map(p => p.y), zs = all.map(p => p.z);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+  const s = 11 / Math.max(Math.max(...ys) - Math.min(...ys), 1e-3);
+  all.forEach(p => { p.x = (p.x - cx) * s; p.y = (p.y - cy) * s; p.z = (p.z - cz) * s; });
+  return all;
+}
+
 // ---------- renderer ----------
 const stage = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -150,8 +208,8 @@ function scatterPoint(r = 13) {
 
 function build() {
   rng = mulberry32((SHOW && SHOW.seed) || 1234);           // reseed -> deterministic
-  inkGrid = computeInk(sourceCanvas);
-  targets = extractTargets(sourceCanvas, (SHOW && SHOW.points) || 5000);
+  if (SHOW && SHOW.parts) { inkGrid = null; targets = sampleScene(SHOW); }   // FORM mode
+  else { inkGrid = computeInk(sourceCanvas); targets = extractTargets(sourceCanvas, (SHOW && SHOW.points) || 5000); }
   N = targets.length;
   starts = new Array(N); delays = new Float32Array(N);
   const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
@@ -206,7 +264,8 @@ function tick() {
 // ---------- critic metric: legibility ----------
 // Of the source's ink cells, what fraction has >=1 point? (low => raise `points` / lower jitter)
 function metrics() {
-  if (!inkGrid || !targets.length) return null;
+  if (!targets.length) return null;
+  if (!inkGrid) return { points: N, mode: 'form' };   // scene mode has no photo grid
   const { gw, gh, ink } = inkGrid;
   const covered = new Set();
   for (const T of targets) {
@@ -267,7 +326,9 @@ window.PROM = {
 
 async function boot() {
   const qs = new URLSearchParams(location.search);
-  SHOW = (qs.get('show') && await tryJson(qs.get('show'))) || await tryJson('../shows/current.json') || DEFAULT_SHOW;
+  SHOW = (qs.get('scene') && await tryJson(qs.get('scene')))     // FORM mode: a described 3D scene
+      || (qs.get('show') && await tryJson(qs.get('show')))
+      || await tryJson('../shows/current.json') || DEFAULT_SHOW;
   const img = await loadImg(qs.get('src') || '../shows/source.png');
   sourceCanvas = img ? imgToCanvas(img) : drawWordmark('PYRE');
   clock.start(); build(); tick();
