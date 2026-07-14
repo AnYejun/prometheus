@@ -1,0 +1,9 @@
+{
+  "$comment": "A SHOW is the choreography DSL — the ONLY thing the LLM authors. The engine turns it into motion. Edit this file, reload the engine, watch it change.",
+  "points": 5200,
+  "scenes": [
+    { "type": "assemble", "at": 0.0, "dur": 3.6, "ease": "outExpo", "stagger": 0.55, "from": "sphere" },
+    { "type": "breathe",  "at": 3.6, "amp": 0.16, "freq": 0.22 },
+    { "type": "swirl",    "at": 3.6, "speed": 0.12, "axis": "y" }
+  ]
+}

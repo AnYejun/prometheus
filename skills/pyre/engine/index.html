@@ -1,0 +1,35 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PYRE — photo → drone-show point cloud</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #hud {
+    position: fixed; left: 18px; bottom: 16px; z-index: 10;
+    font: 500 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    color: #f5a35b; letter-spacing: .04em; opacity: .82;
+    pointer-events: none; text-shadow: 0 0 12px rgba(255,120,40,.5);
+  }
+  #hud b { color: #ffd9a3; font-weight: 700; }
+  #drop {
+    position: fixed; inset: 0; z-index: 9; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(255,110,40,.08);
+    border: 2px dashed rgba(255,150,80,.55);
+    font: 600 20px ui-monospace, monospace; color: #ffcf9e;
+  }
+  #drop.on { display: flex; }
+</style>
+<div id="stage"></div>
+<div id="hud"><b>PYRE</b> · 사진을 드롭하면 그 사진이 됩니다 · 드래그로 회전</div>
+<div id="drop">이미지를 놓으세요 — 불티가 됩니다</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="./engine.js"></script>
