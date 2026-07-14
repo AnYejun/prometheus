@@ -6,6 +6,8 @@
 
 **Give an LLM a language, and it can wield the world that language describes.**
 
+**[▶ Live demo — run all three in your browser](https://anyejun.github.io/prometheus/)** · [Launch kit](LAUNCH.md) · [Contract](CONTRACT.md)
+
 Language is a lossy compression of reality. An LLM is a language engine. So the
 way to hand an LLM a *new* ability is not to retrain it — it's to give it a
 **small language for a domain**, plus a deterministic engine that turns that
@@ -53,16 +55,26 @@ Numbers + a vibe → an animated bar chart. The critic gate is **encoding
 fidelity** (Pearson corr of bar height vs value) — a chart that lies about the
 data *fails the gate*. Proves the contract generalizes past 3D.
 
+### 🎵 [LYRA](skills/lyra) — text → music  *(backend: Tone.js)*
+<p align="center"><img src="assets/lyra.gif" alt="LYRA — a playhead sweeps a piano roll" width="600"></p>
+
+A musical intent → a short playable piece with a piano roll. The critic gate is
+**in-key ratio** — a melody that wanders out of its declared key *fails the gate*.
+Takes the contract to a **non-visual** medium (audio). Live loop caught an off-key
+note (`inKey 0.8 → 1.0`).
+
 ## Add a new language — one command
 ```
 bin/prometheus-new lyra music      # stamps skills/lyra/ from template/
 ```
 Fill the four slots (the TODOs), and the universal loop already drives it.
-*Next flames: music (Tone.js), motion, SVG scenes, shaders.*
+*Next flames: motion, SVG scenes, shaders, poetry with meter…*
 
 ## Try it
+Easiest: **[the live demo](https://anyejun.github.io/prometheus/)**. Or locally:
 ```
 python3 -m http.server 8778 --directory .
-open http://localhost:8778/skills/pyre/engine/index.html    # drag a photo on
+open http://localhost:8778/skills/pyre/engine/index.html     # drag a photo on
 open http://localhost:8778/skills/prism/engine/index.html
+open http://localhost:8778/skills/lyra/engine/index.html     # press ▶ for sound
 ```

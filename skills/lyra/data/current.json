@@ -1,0 +1,17 @@
+{
+  "$comment": "Authored by the loop from 'A-minor riff'. One off-key note (F#5, inKey 0.8) caught by the gate and fixed -> inKey 1.0.",
+  "title": "Ember riff — A minor",
+  "tempo": 120,
+  "key": "A",
+  "scale": "minor",
+  "tracks": [
+    { "name": "lead", "wave": "triangle", "notes": [
+      { "t": 0, "dur": 0.5, "pitch": "A4" }, { "t": 0.5, "dur": 0.5, "pitch": "B4" }, { "t": 1, "dur": 1, "pitch": "C5" },
+      { "t": 2, "dur": 0.5, "pitch": "E5" }, { "t": 2.5, "dur": 0.5, "pitch": "F5" }, { "t": 3, "dur": 1, "pitch": "D5" },
+      { "t": 4, "dur": 0.5, "pitch": "E5" }, { "t": 4.5, "dur": 0.5, "pitch": "G5" }, { "t": 5, "dur": 1, "pitch": "A5" },
+      { "t": 6, "dur": 2, "pitch": "E5" } ] },
+    { "name": "bass", "wave": "sine", "notes": [
+      { "t": 0, "dur": 2, "pitch": "A2" }, { "t": 2, "dur": 1, "pitch": "F2" }, { "t": 3, "dur": 1, "pitch": "G2" },
+      { "t": 4, "dur": 2, "pitch": "A2" }, { "t": 6, "dur": 2, "pitch": "E2" } ] }
+  ]
+}

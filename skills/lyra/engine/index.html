@@ -1,0 +1,23 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LYRA — text → music (Prometheus / Tone.js)</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #08070d; overflow: hidden; }
+  #roll { display: block; }
+  #play {
+    position: fixed; right: 18px; top: 16px; z-index: 10;
+    font: 600 13px ui-monospace, monospace; color: #08070d; background: #f0b45c;
+    border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer;
+  }
+  #hud {
+    position: fixed; left: 18px; bottom: 14px; z-index: 10;
+    font: 500 12px ui-monospace, monospace; color: #d8b48c; opacity: .8; pointer-events: none;
+  }
+  #hud b { color: #ffcf9e; }
+</style>
+<canvas id="roll"></canvas>
+<button id="play">▶ play</button>
+<div id="hud"><b>LYRA</b> · text → music · a Prometheus capability, backend = Tone.js</div>
+<script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+<script src="./lyra.js"></script>

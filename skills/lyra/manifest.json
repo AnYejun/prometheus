@@ -1,0 +1,10 @@
+{
+  "name": "lyra",
+  "medium": "music",
+  "description": "Text/intent -> a short piece of music. The LLM authors a note DSL; the backend is Tone.js. A Prometheus capability proving the contract reaches a non-visual medium (audio), verified by an in-key metric.",
+  "global": "PROM",
+  "executor": "engine/index.html",
+  "grammar": "dsl/GRAMMAR.md",
+  "critic": { "gate": { "inKey": 0.98 }, "rubric": "SKILL.md#critic" },
+  "seeds": ["data/current.json"]
+}
